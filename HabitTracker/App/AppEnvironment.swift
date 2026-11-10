@@ -1,0 +1,106 @@
+import Foundation
+import Observation
+
+@MainActor @Observable
+final class AppEnvironment {
+    var snapshot = StoreSnapshot()
+    var isReady = false
+    var isOpening = false
+    var errorMessage: String?
+    var confirmation: String?
+    var failedLogs: [LogRequest] = []
+    private(set) var store: HabitStore?
+    private(set) var actions: ActivityActions?
+
+    func open() async {
+        guard !isOpening else { return }
+        if isReady { await refresh(); return }
+        isOpening = true
+        defer { isOpening = false }
+        do {
+            let root = try FileManager.default.url(
+                for: .applicationSupportDirectory, in: .userDomainMask,
+                appropriateFor: nil, create: true
+            )
+            var directory = root.appendingPathComponent("HabitTracker", isDirectory: true)
+            #if targetEnvironment(simulator)
+            if ProcessInfo.processInfo.arguments.contains("-ui-testing") {
+                directory = root.appendingPathComponent("HabitTrackerUITests", isDirectory: true)
+                if ProcessInfo.processInfo.arguments.contains("-reset-test-store"),
+                   FileManager.default.fileExists(atPath: directory.path) {
+                    try FileManager.default.removeItem(at: directory)
+                }
+            }
+            #endif
+            let controller = try await PersistenceController.open(
+                storeURL: directory.appendingPathComponent("HabitTracker.sqlite")
+            )
+            let store = HabitStore(controller: controller)
+            self.store = store
+            actions = ActivityActions(store: store)
+            try await reload()
+            isReady = true
+            errorMessage = nil
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func refresh() async {
+        do { try await reload() }
+        catch { errorMessage = error.localizedDescription }
+    }
+
+    private func reload() async throws {
+        guard let store else { throw HabitError.storeUnavailable }
+        snapshot = try await store.snapshot(at: ClockReading(instant: Date(), timeZone: .current))
+    }
+
+    @discardableResult
+    func apply(_ command: HabitCommand) async -> Bool {
+        guard let actions else { errorMessage = HabitError.storeUnavailable.localizedDescription; return false }
+        do {
+            _ = try await actions.apply(command)
+            try await reload()
+            return true
+        } catch { errorMessage = error.localizedDescription; return false }
+    }
+
+    func log(_ activity: ActivitySnapshot) async {
+        guard let actions else { return }
+        do {
+            _ = try await actions.logNow(activityID: activity.id, source: .app)
+            try await reload()
+            confirmation = "Recorded one completion for \(activity.name)."
+        } catch { errorMessage = error.localizedDescription }
+        failedLogs = await actions.pendingRetries()
+    }
+
+    func retry(_ request: LogRequest) async {
+        guard let actions else { return }
+        do {
+            _ = try await actions.retryLog(request)
+            try await reload()
+            confirmation = "Completion saved."
+        } catch { errorMessage = error.localizedDescription }
+        failedLogs = await actions.pendingRetries()
+    }
+
+    func currentPeriod(for activity: ActivitySnapshot) -> GoalPeriodSnapshot? {
+        let today = try? ClockReading(instant: Date(), timeZone: .current).localDay
+        return snapshot.timeline.periods.first {
+            $0.activityID == activity.id && today.map($0.range.contains) == true
+        }
+    }
+}
+
+extension HabitError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case let .validation(field, reason): "Check \(field): \(reason)"
+        case .activityUnavailable: "This activity is unavailable. Select an existing activity or create a new one."
+        case .completionUnavailable: "This entry is unavailable. Refresh the history and try again."
+        case .operationConflict: "This retry differs from the original entry. Refresh before recording a new entry."
+        case .storeUnavailable: "Your data could not be opened. Unlock your phone and retry. Existing data is preserved."
+        case .saveFailed: "Your change could not be saved. Check available storage and retry."
+        }
+    }
+}
