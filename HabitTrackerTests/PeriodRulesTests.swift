@@ -146,4 +146,21 @@ struct PeriodRulesTests {
         )
         #expect(value.periods[0].eligibility == .initialPartial)
     }
+
+    @Test func transitionUsesItsOwnLocalMidpoint() throws {
+        var initial = try state()
+        initial = try PeriodRules.changeWeekStart(
+            state: initial, weekday: 7, at: clock("2026-11-10T17:00:00Z")
+        )
+        // Monday midnight through Sunday midnight: midpoint is Thursday midnight.
+        let edit = TargetEdit(activityID: initial.activities[0].id, target: 4)
+        let exact = try PeriodRules.editTarget(
+            state: initial, edit: edit, at: clock("2026-11-12T05:00:00Z")
+        )
+        let late = try PeriodRules.editTarget(
+            state: initial, edit: edit, at: clock("2026-11-12T05:00:01Z")
+        )
+        #expect(exact.activities[0].effectiveTarget == 4)
+        #expect(late.activities[0].pendingTargetStartDay?.description == "2026-11-15")
+    }
 }

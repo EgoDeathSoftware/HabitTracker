@@ -1,0 +1,110 @@
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24000" systemVersion="25" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="NO" userDefinedModelVersionIdentifier="V1">
+  <entity name="Activity" representedClassName="NSManagedObject" syncable="YES">
+    <attribute name="id" attributeType="UUID" optional="NO" />
+    <attribute name="name" attributeType="String" optional="NO" />
+    <attribute name="symbolName" attributeType="String" optional="NO" />
+    <attribute name="cadence" attributeType="String" optional="NO" />
+    <attribute name="createdAt" attributeType="Date" optional="NO" />
+    <attribute name="createdDay" attributeType="String" optional="NO" />
+    <attribute name="trackingStartDay" attributeType="String" optional="NO" />
+    <attribute name="trackingStartsAtMidnight" attributeType="Boolean" optional="NO" usesScalarValueType="YES" />
+    <attribute name="initialTarget" attributeType="Integer 64" optional="NO" usesScalarValueType="YES" />
+    <attribute name="effectiveTarget" attributeType="Integer 64" optional="NO" usesScalarValueType="YES" />
+    <attribute name="pendingTarget" attributeType="Integer 64" optional="YES" usesScalarValueType="YES" />
+    <attribute name="pendingTargetStartDay" attributeType="String" optional="YES" />
+    <uniquenessConstraints>
+      <uniquenessConstraint>
+        <constraint value="id" />
+      </uniquenessConstraint>
+    </uniquenessConstraints>
+    <relationship name="completions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Completion" inverseName="activity" inverseEntity="Completion" />
+    <relationship name="receipts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="OperationReceipt" inverseName="activity" inverseEntity="OperationReceipt" />
+    <relationship name="periods" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="GoalPeriod" inverseName="activity" inverseEntity="GoalPeriod" />
+  </entity>
+  <entity name="Completion" representedClassName="NSManagedObject" syncable="YES">
+    <attribute name="id" attributeType="UUID" optional="NO" />
+    <attribute name="activityID" attributeType="UUID" optional="NO" />
+    <attribute name="assignedDay" attributeType="String" optional="NO" />
+    <attribute name="occurredAt" attributeType="Date" optional="YES" />
+    <attribute name="captureTimeZoneID" attributeType="String" optional="NO" />
+    <attribute name="createdAt" attributeType="Date" optional="NO" />
+    <attribute name="source" attributeType="String" optional="NO" />
+    <attribute name="operationID" attributeType="UUID" optional="NO" />
+    <attribute name="wasTimeOrDateEdited" attributeType="Boolean" optional="NO" usesScalarValueType="YES" />
+    <uniquenessConstraints>
+      <uniquenessConstraint>
+        <constraint value="id" />
+      </uniquenessConstraint>
+      <uniquenessConstraint>
+        <constraint value="operationID" />
+      </uniquenessConstraint>
+    </uniquenessConstraints>
+    <relationship name="activity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Activity" inverseName="completions" inverseEntity="Activity" />
+    <fetchIndex name="CompletionByActivityDay">
+      <fetchIndexElement property="activityID" type="Binary" order="ascending" />
+      <fetchIndexElement property="assignedDay" type="Binary" order="ascending" />
+    </fetchIndex>
+  </entity>
+  <entity name="OperationReceipt" representedClassName="NSManagedObject" syncable="YES">
+    <attribute name="operationID" attributeType="UUID" optional="NO" />
+    <attribute name="activityID" attributeType="UUID" optional="NO" />
+    <attribute name="completionID" attributeType="UUID" optional="NO" />
+    <attribute name="assignedDay" attributeType="String" optional="NO" />
+    <attribute name="occurredAt" attributeType="Date" optional="YES" />
+    <attribute name="captureTimeZoneID" attributeType="String" optional="NO" />
+    <attribute name="source" attributeType="String" optional="NO" />
+    <uniquenessConstraints>
+      <uniquenessConstraint>
+        <constraint value="operationID" />
+      </uniquenessConstraint>
+    </uniquenessConstraints>
+    <relationship name="activity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Activity" inverseName="receipts" inverseEntity="Activity" />
+  </entity>
+  <entity name="GoalPeriod" representedClassName="NSManagedObject" syncable="YES">
+    <attribute name="activityID" attributeType="UUID" optional="NO" />
+    <attribute name="startDay" attributeType="String" optional="NO" />
+    <attribute name="endDayExclusive" attributeType="String" optional="NO" />
+    <attribute name="cadence" attributeType="String" optional="NO" />
+    <attribute name="target" attributeType="Integer 64" optional="NO" usesScalarValueType="YES" />
+    <attribute name="targetAppliedAt" attributeType="Date" optional="NO" />
+    <attribute name="eligibility" attributeType="String" optional="NO" />
+    <attribute name="closedAt" attributeType="Date" optional="YES" />
+    <uniquenessConstraints>
+      <uniquenessConstraint>
+        <constraint value="activityID" />
+        <constraint value="startDay" />
+      </uniquenessConstraint>
+    </uniquenessConstraints>
+    <relationship name="activity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Activity" inverseName="periods" inverseEntity="Activity" />
+    <fetchIndex name="GoalPeriodByActivityDay">
+      <fetchIndexElement property="activityID" type="Binary" order="ascending" />
+      <fetchIndexElement property="startDay" type="Binary" order="ascending" />
+    </fetchIndex>
+  </entity>
+  <entity name="CalendarRule" representedClassName="NSManagedObject" syncable="YES">
+    <attribute name="id" attributeType="UUID" optional="NO" />
+    <attribute name="effectiveStartDay" attributeType="String" optional="NO" />
+    <attribute name="weekStartWeekday" attributeType="Integer 64" optional="NO" usesScalarValueType="YES" />
+    <attribute name="createdAt" attributeType="Date" optional="NO" />
+    <uniquenessConstraints>
+      <uniquenessConstraint>
+        <constraint value="id" />
+      </uniquenessConstraint>
+      <uniquenessConstraint>
+        <constraint value="effectiveStartDay" />
+      </uniquenessConstraint>
+    </uniquenessConstraints>
+  </entity>
+  <entity name="AppSettings" representedClassName="NSManagedObject" syncable="YES">
+    <attribute name="key" attributeType="String" optional="NO" />
+    <attribute name="weekStartWeekday" attributeType="Integer 64" optional="NO" usesScalarValueType="YES" />
+    <attribute name="pendingWeekday" attributeType="Integer 64" optional="YES" usesScalarValueType="YES" />
+    <attribute name="pendingEffectiveDay" attributeType="String" optional="YES" />
+    <attribute name="revision" attributeType="Integer 64" optional="NO" usesScalarValueType="YES" />
+    <uniquenessConstraints>
+      <uniquenessConstraint>
+        <constraint value="key" />
+      </uniquenessConstraint>
+    </uniquenessConstraints>
+  </entity>
+</model>

@@ -21,14 +21,19 @@ struct ActivitySnapshot: Equatable, Sendable, Identifiable {
     var pendingTargetStartDay: CalendarDay?
 
     init(id: UUID, draft: HabitDraft, at: ClockReading) {
+        self.init(id: id, draft: draft, createdAt: at.instant, createdDay: at.localDay)
+        trackingStartsAtMidnight = at.instant == at.localDay.midnight(in: at.timeZone)
+    }
+
+    init(id: UUID, draft: HabitDraft, createdAt: Date, createdDay: CalendarDay) {
         self.id = id
         name = draft.name
         symbolName = draft.symbolName
         cadence = draft.cadence
-        createdAt = at.instant
-        createdDay = at.localDay
-        trackingStartDay = at.localDay
-        trackingStartsAtMidnight = at.instant == at.localDay.midnight(in: at.timeZone)
+        self.createdAt = createdAt
+        self.createdDay = createdDay
+        trackingStartDay = createdDay
+        trackingStartsAtMidnight = false
         initialTarget = draft.target
         effectiveTarget = draft.target
     }
