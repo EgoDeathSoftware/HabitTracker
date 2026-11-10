@@ -1,6 +1,6 @@
 # Habit Tracker — Product and Implementation Specification
 
-Status: Draft for owner review. No product implementation is authorized.
+Status: Version 1.0 — accepted specification. Product implementation has not started.
 Date: 2026-11-10.
 Platform: Native iPhone application using Swift and SwiftUI, iOS 26 or later.
 Initial test device: owner's iPhone, reported as running iOS 26.6.2.
@@ -47,12 +47,13 @@ Export generates a local file and presents the iOS share/save interface. The use
 destination. The app never authenticates with or calls Google Sheets or another cloud service.
 Deleting app data does not delete previous exports or copies in old device backups.
 
-## 4. Proposed defaults for review
+## 4. Version 1 implementation defaults
 
-These are explicit proposals, not previously confirmed owner decisions. Later sections define
-their behavior so implementation can proceed once the specification is approved.
+These defaults complete the product decisions above and are adopted for version 1 following
+specification review. They originated as engineering proposals; validate the learning thresholds
+and platform behavior during implementation without silently changing the product requirements.
 
-| Topic | Proposed version 1 rule |
+| Topic | Version 1 rule |
 | --- | --- |
 | Target forms | Either N completions every day or N distinct days per week; no combined daily/weekly plan. |
 | Target bounds | Daily: 1–10 completions. Weekly: 1–7 distinct days. |
@@ -107,7 +108,7 @@ does not delete the activity. A timestamp/date-edited record is excluded from re
 Expose a parameterized App Intent to record one completion for an activity's stable identifier.
 Renaming must not break a shortcut.
 
-Proposed default: bring the app forward, record once, and show brief success with updated
+Default behavior: bring the app forward, record once, and show brief success with updated
 progress. Rendering the confirmation must not log again. Do not automatically close the app.
 A supported background invocation may log without an in-app confirmation; errors must not
 masquerade as success.
@@ -194,7 +195,7 @@ is excluded from completed-period success rates. An earlier-date backfill extend
 midnight on that date; this can make previously partial periods eligible. Deleting the earliest
 log does not automatically shorten the tracking range or erase intervening missed periods.
 
-Proposed week-start edit behavior: display an effective date at the next occurrence of the new
+Week-start edit behavior: display an effective date at the next occurrence of the new
 weekday. End the current weekly period there, marking it transitional if it is not a normal
 seven-day period; exclude it from historical success rates. Preserve earlier period boundaries.
 Daily habits are unaffected. A second edit before activation replaces the pending setting.
@@ -278,7 +279,7 @@ restore future eligible reminders only. Disabling reminders cancels pending requ
 Use gentle wording such as “A moment for reading?” The app knows what was logged, not what
 actually happened. Tapping a notification opens the activity; it does not log automatically.
 
-### Proposed local learning algorithm
+### Initial local learning algorithm
 
 Recalculate after relevant activity changes and when the app becomes active.
 
@@ -299,7 +300,7 @@ Recalculate after relevant activity changes and when the app becomes active.
    at the next app opportunity until acknowledged. Group one calculation's multiple-slot
    changes into one note; no extra notification is required.
 
-Do not learn mandatory weekdays. These thresholds are explicit proposed defaults to validate.
+Do not learn mandatory weekdays. These thresholds are initial defaults to validate.
 
 ### Scheduling and platform limits
 
@@ -307,7 +308,7 @@ Use local notifications only. The database is authoritative; the notification qu
 Reconcile after logging, corrections, target/settings changes, deletion, app activation, and
 any background refresh granted by iOS.
 
-Proposed queue: generate eligible times for the next 28 days, sort with stable tie-breaking,
+Queue policy: generate eligible times for the next 28 days, sort with stable tie-breaking,
 and schedule the earliest 60 requests. This is a conservative application budget to validate
 on the supported OS, not a guarantee of OS capacity. Use stable identifiers, check scheduling
 errors and pending requests, and remove stale notifications. A scheduling failure never
@@ -318,7 +319,7 @@ system settings, and OS scheduling. Background execution is not guaranteed. The 
 can run out if there is no app or shortcut use; more reminder slots shorten its coverage.
 Opening/logging replenishes it. Background refresh is assistance, not a correctness dependency.
 Do not promise unlimited unattended reminders or exact-to-the-minute delivery.
-This limitation requires owner approval before implementation.
+Finite reminder coverage is an accepted version 1 tradeoff and must be explained accurately.
 
 ## 11. CSV export
 
@@ -406,13 +407,14 @@ and the iOS features still need platform-specific integration. No current requir
 The original Sheets-backed tracker was replaced by this app. Sheets may consume a user-exported
 file but is never a storage dependency.
 
-Review section 4's proposals before approval, particularly notification coverage, learning,
-report attribution, and fixed cadence. Database framework, internal APIs, navigation/layout,
-symbol palette, and test framework remain builder choices within these requirements.
+Use section 4's defaults, including notification coverage, learning, report attribution, and
+fixed cadence. Database framework, internal APIs, navigation/layout, symbol palette, and test
+framework remain builder choices to resolve in the implementation plan.
 
-The deliverable for this task is this specification. Approval does not authorize product code,
-scaffolding, dependencies, or deployment in this conversation. A public App Store release needs
-a later distribution, metadata, privacy-disclosure, and release-readiness pass.
+The deliverable for this task is this specification. Start product implementation only after a
+subsequent explicit request. No product code, scaffolding, dependencies, or deployment is part
+of the specification task. A public App Store release needs a later distribution, metadata,
+privacy-disclosure, and release-readiness pass.
 
 ## 15. Platform references
 
