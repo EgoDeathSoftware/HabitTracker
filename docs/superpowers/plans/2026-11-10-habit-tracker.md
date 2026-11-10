@@ -18,8 +18,9 @@ Swift Testing, XCTest/XCUITest; Apple frameworks only. iOS 26 minimum.
 **Design:** [Storage, model, and shared contracts](../../architecture/0001-local-storage-and-domain.md).
 **Tests:** [All 22 acceptance criteria and device procedures](../../testing/acceptance-matrix.md).
 **Status:** Implementation authorized and in progress. The Stage A app and simulator checks
-are tracked under [test results](../../testing/results/). Physical iOS 26 validation (D2) is
-required before advancing to Stage B.
+are tracked under [test results](../../testing/results/). Physical iOS 26 validation (D2)
+remains required for Stage A acceptance. Independent implementation can proceed while D2
+awaits a phone.
 
 ## Global Constraints
 
@@ -64,15 +65,15 @@ Separating those into unrelated subsystem plans would obscure the same transacti
 
 | Stage | Tasks | Reviewable result / gate |
 | --- | --- | --- |
-| A — Tracking and shortcuts | T01–T05 | On physical iPhone: create, log in app and Home Screen, correct history, restart, verify persistence. Complete D2 before building later features. |
+| A — Tracking and shortcuts | T01–T05 | On physical iPhone: create, log in app and Home Screen, correct history, restart, verify persistence. D2 remains open until verified on the phone. |
 | B — Progress reports | T06 | Weekly/monthly/yearly totals proven against fixed history, including changed targets and empty periods. |
 | C — Adaptive reminders | T07–T08 | Local learning and notices, then OS scheduling; device D3 with no logging dependency on notifications. |
 | D — CSV export | T09 | Offline date-range export with zeros and historical targets; D5 interoperability. |
 | E — Data continuity and full acceptance | T10–T11 | Migration/restore/transfer evidence, offline end-to-end and accessible primary flows. Record any unavailable device checks explicitly. |
 
-Do not advance through a failing stage gate. If OS behavior contradicts the design, record the
-specific evidence and propose a correction before changing a product requirement. Never count
-a simulator-only shortcut or backup test as the required physical-device result.
+If OS behavior contradicts the design, record the specific evidence and propose a correction
+before changing a product requirement. Physical shortcut and backup acceptance require results
+from a physical device.
 
 ## Planned file structure
 

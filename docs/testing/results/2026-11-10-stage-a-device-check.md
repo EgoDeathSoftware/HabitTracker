@@ -35,5 +35,5 @@ signing, system Shortcuts run, or iOS 26 guide-label validation was performed.
    fixed parameters, target variants, rename, duplicate names, deletion, and offline guide use.
    Record the phone model, iOS version, build/commit, and observed results here.
 
-Stage B remains pending the physical D2 gate in the accepted plan. Backup and phone transfer
-are later device procedures and remain unverified.
+D2 remains open for physical device acceptance while independent app implementation proceeds.
+Backup and phone transfer are later device procedures and remain unverified.

@@ -14,6 +14,9 @@ final class HistoryFlowTests: XCTestCase {
         log.tap()
         XCTAssertTrue(app.staticTexts["1 of 1 completions"].waitForExistence(timeout: 5))
         app.buttons["Open Read"].tap()
+        app.buttons["Progress reports"].tap()
+        XCTAssertTrue(app.staticTexts["Calendar"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
         app.buttons["Edit recorded history"].tap()
         app.cells.firstMatch.tap()
         let timeToggle = app.switches["Include actual time"]

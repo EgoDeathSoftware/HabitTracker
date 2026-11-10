@@ -24,6 +24,7 @@ struct ActivityDetailView: View {
                     }
                 }
                 Section {
+                    NavigationLink("Progress reports") { ReportsView(activity: activity) }
                     NavigationLink("Edit recorded history") { HistoryEditorView(activityID: activityID) }
                     Button("Edit name and icon") { editing = true }
                     NavigationLink("Home Screen shortcut") { ShortcutGuideView(activity: activity) }
