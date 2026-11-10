@@ -411,6 +411,15 @@ Use section 4's defaults, including notification coverage, learning, report attr
 fixed cadence. Database framework, internal APIs, navigation/layout, symbol palette, and test
 framework remain builder choices to resolve in the implementation plan.
 
+Planning documents prepared for review before development:
+
+- [Local storage and domain design](docs/architecture/0001-local-storage-and-domain.md)
+- [Staged implementation plan](docs/superpowers/plans/2026-11-10-habit-tracker.md)
+- [Acceptance-test mapping and device checks](docs/testing/acceptance-matrix.md)
+
+These documents propose internal implementation choices. Their review does not imply that
+application code exists or that any acceptance test has passed.
+
 The deliverable for this task is this specification. Start product implementation only after a
 subsequent explicit request. No product code, scaffolding, dependencies, or deployment is part
 of the specification task. A public App Store release needs a later distribution, metadata,
