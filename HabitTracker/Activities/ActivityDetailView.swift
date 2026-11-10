@@ -13,7 +13,11 @@ struct ActivityDetailView: View {
                 Section("Current goal") {
                     ActivityProgressView(activity: activity)
                     Button("Log one completion") { Task { await environment.log(activity) } }
-                    if let confirmation = environment.confirmation { Text(confirmation).font(.callout) }
+                    if let confirmation = environment.confirmation {
+                        Label(confirmation, systemImage: "checkmark.circle")
+                            .font(.callout)
+                            .accessibilityAddTraits(.updatesFrequently)
+                    }
                     NavigationLink("Change target") { TargetEditorView(activity: activity) }
                     if let pending = activity.pendingTarget, let day = activity.pendingTargetStartDay {
                         Text("Target \(pending) starts \(day.description).")
@@ -22,6 +26,7 @@ struct ActivityDetailView: View {
                 Section {
                     NavigationLink("Edit recorded history") { HistoryEditorView(activityID: activityID) }
                     Button("Edit name and icon") { editing = true }
+                    NavigationLink("Home Screen shortcut") { ShortcutGuideView(activity: activity) }
                 }
                 Section {
                     Button("Delete activity", role: .destructive) { deleting = true }

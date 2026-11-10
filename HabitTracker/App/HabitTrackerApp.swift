@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct HabitTrackerApp: App {
-    @State private var environment = AppEnvironment()
+    @State private var environment = AppEnvironment.shared
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {

@@ -3,6 +3,8 @@ import Observation
 
 @MainActor @Observable
 final class AppEnvironment {
+    static let shared = AppEnvironment()
+    let router = AppRouter()
     var snapshot = StoreSnapshot()
     var isReady = false
     var isOpening = false
@@ -11,10 +13,27 @@ final class AppEnvironment {
     var failedLogs: [LogRequest] = []
     private(set) var store: HabitStore?
     private(set) var actions: ActivityActions?
+    private var openingTask: Task<Void, Never>?
+    @ObservationIgnored private var confirmationTask: Task<Void, Never>?
+
+    init(store: HabitStore? = nil) {
+        if let store {
+            self.store = store
+            actions = ActivityActions(store: store)
+            isReady = true
+        }
+    }
 
     func open() async {
-        guard !isOpening else { return }
+        if let openingTask { await openingTask.value; return }
         if isReady { await refresh(); return }
+        let task = Task { await loadStore() }
+        openingTask = task
+        await task.value
+        openingTask = nil
+    }
+
+    private func loadStore() async {
         isOpening = true
         defer { isOpening = false }
         do {
@@ -69,7 +88,7 @@ final class AppEnvironment {
         do {
             _ = try await actions.logNow(activityID: activity.id, source: .app)
             try await reload()
-            confirmation = "Recorded one completion for \(activity.name)."
+            showConfirmation("Recorded one completion for \(activity.name).")
         } catch { errorMessage = error.localizedDescription }
         failedLogs = await actions.pendingRetries()
     }
@@ -79,9 +98,41 @@ final class AppEnvironment {
         do {
             _ = try await actions.retryLog(request)
             try await reload()
-            confirmation = "Completion saved."
+            showConfirmation("Completion saved.")
         } catch { errorMessage = error.localizedDescription }
         failedLogs = await actions.pendingRetries()
+    }
+
+    func shortcutActivities() async throws -> [ActivitySnapshot] {
+        if !isReady { await open() }
+        guard isReady else { throw HabitError.storeUnavailable }
+        try await reload()
+        return snapshot.timeline.activities
+    }
+
+    func recordShortcut(activityID: UUID) async throws {
+        router.clearConfirmation()
+        confirmationTask?.cancel()
+        confirmation = nil
+        if !isReady { await open() }
+        guard isReady, let actions else { throw HabitError.storeUnavailable }
+        let receipt = try await actions.logNow(activityID: activityID, source: .shortcut)
+        // The receipt proves commit. A refresh problem must not invite another log.
+        await refresh()
+        if let activity = snapshot.timeline.activities.first(where: { $0.id == activityID }) {
+            showConfirmation("Recorded one completion for \(activity.name).")
+        }
+        router.showActivity(id: activityID, confirmation: receipt)
+    }
+
+    private func showConfirmation(_ message: String) {
+        confirmationTask?.cancel()
+        confirmation = message
+        confirmationTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(3)) }
+            catch { return }
+            self?.confirmation = nil
+        }
     }
 
     func currentPeriod(for activity: ActivitySnapshot) -> GoalPeriodSnapshot? {

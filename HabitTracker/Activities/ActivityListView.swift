@@ -5,8 +5,8 @@ struct ActivityListView: View {
     @State private var showingEditor = false
 
     var body: some View {
-        @Bindable var environment = environment
-        NavigationStack {
+        @Bindable var router = environment.router
+        NavigationStack(path: $router.path) {
             Group {
                 if environment.isReady { activityList }
                 else if environment.isOpening { ProgressView("Opening local history…") }
@@ -21,6 +21,8 @@ struct ActivityListView: View {
                 }
             }
             .navigationTitle("Habit Tracker")
+            .navigationDestination(for: UUID.self) { ActivityDetailView(activityID: $0) }
+            .onChange(of: router.path) { _, _ in showingEditor = false }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink { SettingsView() } label: { Label("Settings", systemImage: "gear") }
@@ -38,6 +40,7 @@ struct ActivityListView: View {
                 Button("OK") { environment.errorMessage = nil }
             } message: { Text(environment.errorMessage ?? "Please try again.") }
         }
+        .id(router.navigationID)
     }
 
     private var activityList: some View {
@@ -45,10 +48,6 @@ struct ActivityListView: View {
             if let confirmation = environment.confirmation {
                 Label(confirmation, systemImage: "checkmark.circle")
                     .font(.callout).accessibilityAddTraits(.updatesFrequently)
-                    .task(id: confirmation) {
-                        try? await Task.sleep(for: .seconds(3))
-                        if environment.confirmation == confirmation { environment.confirmation = nil }
-                    }
             }
             ForEach(environment.failedLogs, id: \.operationID) { request in
                 Button("Retry unsaved completion") { Task { await environment.retry(request) } }
@@ -59,9 +58,7 @@ struct ActivityListView: View {
             }
             ForEach(environment.snapshot.timeline.activities) { activity in
                 HStack(alignment: .center, spacing: 16) {
-                    NavigationLink {
-                        ActivityDetailView(activityID: activity.id)
-                    } label: {
+                    NavigationLink(value: activity.id) {
                         VStack(alignment: .leading, spacing: 6) {
                             Label(activity.name, systemImage: activity.symbolName).font(.headline)
                             ActivityProgressView(activity: activity)

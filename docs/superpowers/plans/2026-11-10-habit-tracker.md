@@ -17,8 +17,9 @@ Swift Testing, XCTest/XCUITest; Apple frameworks only. iOS 26 minimum.
 **Spec:** [SPEC.md](../../../SPEC.md), accepted version 1.0.
 **Design:** [Storage, model, and shared contracts](../../architecture/0001-local-storage-and-domain.md).
 **Tests:** [All 22 acceptance criteria and device procedures](../../testing/acceptance-matrix.md).
-**Status:** Ready for owner review. This document contains planned interfaces/assertions only;
-no app scaffold, implementation, or tests have been created. Development is not authorized yet.
+**Status:** Implementation authorized and in progress. The Stage A app and simulator checks
+are tracked under [test results](../../testing/results/). Physical iOS 26 validation (D2) is
+required before advancing to Stage B.
 
 ## Global Constraints
 
@@ -131,7 +132,7 @@ Store tests use temporary **on-disk SQLite**, not only Core Data's in-memory sto
 For each task, implement test assertions before production behavior, run red, implement, run
 green, inspect the diff, then commit only that task's files with the listed subject. Test snippets
 below specify named tests and observable results, not full implementation bodies. The prose
-defines their inputs. Do not create application/test files while this remains a planning task.
+defines their inputs.
 Some assertions use named test probes, such as `pendingActivityIDs` or `originalFixtureDigest`,
 to inspect observations across service calls. Those are test-helper projections of the declared
 contracts, not additional production wrapper types or persisted properties.
