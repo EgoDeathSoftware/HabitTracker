@@ -1,6 +1,95 @@
 import CoreData
 import Foundation
 
+extension ManagedObjectMapping {
+    private static func loadReminders(into snapshot: inout StoreSnapshot,
+                                      context: NSManagedObjectContext) throws {
+        for row in try rows("ReminderConfiguration", context) {
+            let id: UUID = try required(row, "activityID")
+            let slots = try orderedChildren(row, "slots").map { child in
+                var slot = try ReminderSlot(minute: integer(child, "seedMinute"))
+                slot.effectiveMinute = try integer(child, "effectiveMinute")
+                if let day = child.value(forKey: "lastAdjustedDay") as? String {
+                    slot.lastAdjustedDay = try CalendarDay(day)
+                }
+                return slot
+            }
+            snapshot.reminders[id] = try ReminderConfiguration(
+                activityID: id, isEnabled: required(row, "enabled"),
+                target: integer(row, "target"), learningStartedAt: required(row, "learningStartedAt"),
+                learningStartDay: CalendarDay(required(row, "learningStartDay")), slots: slots,
+                pendingSeeds: orderedChildren(row, "pendingSeeds").map { try integer($0, "minute") }
+            )
+        }
+        snapshot.notices = try rows("AdjustmentNotice", context).map { row in
+            try AdjustmentNotice(id: required(row, "id"), activityID: required(row, "activityID"),
+                createdAt: required(row, "createdAt"), reason: required(row, "reason"),
+                changes: orderedChildren(row, "changes").map {
+                    try ReminderChange(slotIndex: integer($0, "slotIndex"),
+                                       oldMinute: integer($0, "oldMinute"), newMinute: integer($0, "newMinute"))
+                }, acknowledgedAt: row.value(forKey: "acknowledgedAt") as? Date)
+        }.sorted { ($0.createdAt, $0.id.uuidString) < ($1.createdAt, $1.id.uuidString) }
+    }
+
+    private static func orderedChildren(_ row: NSManagedObject, _ key: String) throws
+        -> [NSManagedObject] {
+        let children = row.value(forKey: key) as? Set<NSManagedObject> ?? []
+        return try children.map { (try integer($0, "slotIndex"), $0) }
+            .sorted { $0.0 < $1.0 }.map(\.1)
+    }
+
+    private static func saveReminders(_ snapshot: StoreSnapshot, activities: [String: NSManagedObject],
+                                      context: NSManagedObjectContext) throws {
+        let configs = try sync("ReminderConfiguration", records: snapshot.reminders.values.map { config in
+            let id = config.activityID.uuidString
+            return (id, ["activityID": config.activityID, "activity": activities[id] as Any?,
+                         "enabled": config.isEnabled, "target": config.target,
+                         "learningStartedAt": config.learningStartedAt,
+                         "learningStartDay": config.learningStartDay.description])
+        }, key: { try required($0, "activityID") as UUID }, context: context)
+        _ = try sync("ReminderSlot", records: snapshot.reminders.values.flatMap { config in
+            config.slots.enumerated().map { index, slot in
+                let id = config.activityID.uuidString
+                return ("\(id):\(index)", ["activityID": config.activityID, "slotIndex": index,
+                    "configuration": configs[id] as Any?, "seedMinute": slot.seedMinute,
+                    "effectiveMinute": slot.effectiveMinute,
+                    "lastAdjustedDay": slot.lastAdjustedDay?.description as Any?])
+            }
+        }, stringKey: { try childKey($0, owner: "activityID") }, context: context)
+        _ = try sync("PendingReminderSeed", records: snapshot.reminders.values.flatMap { config in
+            config.pendingSeeds.enumerated().map { index, minute in
+                let id = config.activityID.uuidString
+                return ("\(id):\(index)", ["activityID": config.activityID, "slotIndex": index,
+                                          "configuration": configs[id] as Any?, "minute": minute])
+            }
+        }, stringKey: { try childKey($0, owner: "activityID") }, context: context)
+        try saveNotices(snapshot.notices, activities: activities, context: context)
+    }
+
+    private static func saveNotices(_ notices: [AdjustmentNotice], activities: [String: NSManagedObject],
+                                    context: NSManagedObjectContext) throws {
+        let parents = try sync("AdjustmentNotice", records: notices.map { notice in
+            (notice.id.uuidString, ["id": notice.id, "activityID": notice.activityID,
+                "activity": activities[notice.activityID.uuidString] as Any?,
+                "createdAt": notice.createdAt, "reason": notice.reason,
+                "acknowledgedAt": notice.acknowledgedAt as Any?])
+        }, key: { try required($0, "id") as UUID }, context: context)
+        _ = try sync("AdjustmentChange", records: notices.flatMap { notice in
+            notice.changes.map { change in
+                let id = notice.id.uuidString
+                return ("\(id):\(change.slotIndex)", ["noticeID": notice.id,
+                    "notice": parents[id] as Any?, "slotIndex": change.slotIndex,
+                    "oldMinute": change.oldMinute, "newMinute": change.newMinute])
+            }
+        }, stringKey: { try childKey($0, owner: "noticeID") }, context: context)
+    }
+
+    private static func childKey(_ row: NSManagedObject, owner: String) throws -> String {
+        let id: UUID = try required(row, owner)
+        return "\(id.uuidString):\(try integer(row, "slotIndex"))"
+    }
+}
+
 enum ManagedObjectMapping {
     static func load(_ context: NSManagedObjectContext) throws -> StoreState {
         var state = StoreState()
@@ -38,6 +127,9 @@ enum ManagedObjectMapping {
                 )
             }
         }
+        if NSEntityDescription.entity(forEntityName: "ReminderConfiguration", in: context) != nil {
+            try loadReminders(into: &state.snapshot, context: context)
+        }
         return state
     }
 
@@ -48,6 +140,9 @@ enum ManagedObjectMapping {
         )
         let activityMap = Dictionary(uniqueKeysWithValues: activities.map { ($0.key, $0.value) })
         try saveChildren(state, activities: activityMap, context: context)
+        if NSEntityDescription.entity(forEntityName: "ReminderConfiguration", in: context) != nil {
+            try saveReminders(state.snapshot, activities: activityMap, context: context)
+        }
         _ = try sync("CalendarRule", records: state.snapshot.timeline.calendarRules.map {
             ($0.id.uuidString, ["id": $0.id, "effectiveStartDay": $0.effectiveStartDay.description,
                                "weekStartWeekday": $0.weekStartWeekday, "createdAt": $0.createdAt])

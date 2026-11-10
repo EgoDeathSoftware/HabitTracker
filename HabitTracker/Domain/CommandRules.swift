@@ -3,7 +3,7 @@ import Foundation
 enum CommandRules {
     static func apply(_ command: HabitCommand, to state: inout StoreState,
                       at: ClockReading) throws -> MutationReceipt {
-        state.snapshot.timeline = try PeriodRules.advance(state: state.snapshot.timeline, at: at)
+        try ReminderRules.advance(&state.snapshot, at: at)
         var receipt = MutationReceipt(revision: state.snapshot.revision)
         switch command {
         case let .create(id, draft):
@@ -34,6 +34,7 @@ enum CommandRules {
                 state: state.snapshot.timeline, edit: edit, at: at
             )
             let activity = state.snapshot.timeline.activities[try activityIndex(edit.activityID, in: state)]
+            try ReminderRules.targetChanged(edit, activity: activity, snapshot: &state.snapshot, at: at)
             receipt.activityID = edit.activityID
             receipt.effectiveTargetDay = activity.pendingTargetStartDay
                 ?? state.snapshot.timeline.periods.first {
@@ -49,10 +50,21 @@ enum CommandRules {
             state.snapshot.timeline.periods.removeAll { $0.activityID == id }
             state.snapshot.completions.removeAll { $0.activityID == id }
             state.receipts.removeAll { $0.request.activityID == id }
+            state.snapshot.reminders.removeValue(forKey: id)
+            state.snapshot.notices.removeAll { $0.activityID == id }
             receipt.activityID = id
+        case let .editReminders(edit):
+            try ReminderRules.edit(edit, in: &state.snapshot, at: at)
+            receipt.activityID = edit.activityID
+        case let .acknowledgeNotice(id):
+            if let index = state.snapshot.notices.firstIndex(where: { $0.id == id }),
+               state.snapshot.notices[index].acknowledgedAt == nil {
+                state.snapshot.notices[index].acknowledgedAt = at.instant
+            }
         case .refresh: break
         }
-        state.snapshot.timeline = try PeriodRules.advance(state: state.snapshot.timeline, at: at)
+        try ReminderRules.advance(&state.snapshot, at: at)
+        ReminderLearning.apply(to: &state.snapshot, at: at)
         return receipt
     }
 

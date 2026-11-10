@@ -25,6 +25,8 @@ enum HabitCommand: Sendable {
     case editTarget(TargetEdit)
     case changeWeekStart(Int)
     case deleteActivity(UUID)
+    case editReminders(ReminderEdit)
+    case acknowledgeNotice(UUID)
     case refresh
 }
 
@@ -45,6 +47,8 @@ struct StoreSnapshot: Equatable, Sendable {
     var timeline = TimelineState()
     var completions: [CompletionSnapshot] = []
     var revision: Int64 = 0
+    var reminders: [UUID: ReminderConfiguration] = [:]
+    var notices: [AdjustmentNotice] = []
 }
 
 struct OperationReceipt: Equatable, Sendable {

@@ -52,6 +52,17 @@ struct ActivityListView: View {
             ForEach(environment.failedLogs, id: \.operationID) { request in
                 Button("Retry unsaved completion") { Task { await environment.retry(request) } }
             }
+            ForEach(environment.snapshot.notices.filter { $0.acknowledgedAt == nil }) { notice in
+                if let activity = environment.snapshot.timeline.activities.first(where: {
+                    $0.id == notice.activityID
+                }) {
+                    NavigationLink {
+                        ReminderNoticesView(activityID: activity.id)
+                    } label: {
+                        Label("Reminder times adjusted for \(activity.name)", systemImage: "clock")
+                    }
+                }
+            }
             if environment.snapshot.timeline.activities.isEmpty {
                 ContentUnavailableView("Start with one activity", systemImage: "checkmark.circle",
                                        description: Text("Add an activity and choose your daily or weekly target."))

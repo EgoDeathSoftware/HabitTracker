@@ -28,7 +28,8 @@ actor HabitStore {
         try await controller.transaction { context in
             let original = try ManagedObjectMapping.load(context)
             var updated = original
-            updated.snapshot.timeline = try PeriodRules.advance(state: original.snapshot.timeline, at: at)
+            try ReminderRules.advance(&updated.snapshot, at: at)
+            ReminderLearning.apply(to: &updated.snapshot, at: at)
             if updated != original {
                 updated.snapshot.revision += 1
                 try ManagedObjectMapping.save(updated, in: context)
@@ -38,6 +39,8 @@ actor HabitStore {
                 result.timeline.activities.removeAll { $0.id != id }
                 result.timeline.periods.removeAll { $0.activityID != id }
                 result.completions.removeAll { $0.activityID != id }
+                result.reminders = result.reminders.filter { $0.key == id }
+                result.notices.removeAll { $0.activityID != id }
             }
             if let range = query.range {
                 result.timeline.periods.removeAll {

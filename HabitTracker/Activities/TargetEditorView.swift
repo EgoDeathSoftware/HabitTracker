@@ -6,6 +6,7 @@ struct TargetEditorView: View {
     let activity: ActivitySnapshot
     @State private var target: Int
     @State private var saving = false
+    @State private var addedMinutes: [Int] = []
 
     init(activity: ActivitySnapshot) {
         self.activity = activity
@@ -16,12 +17,19 @@ struct TargetEditorView: View {
         Form {
             Stepper("Target: \(target)", value: $target, in: 1...(activity.cadence == .daily ? 10 : 7))
             Text(preview).font(.callout)
+            if !addedMinutes.isEmpty {
+                ReminderTimeFields(minutes: $addedMinutes, firstSlot: activity.effectiveTarget + 1)
+                Text("New times follow the retained reminders and must be at least 30 minutes apart.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
             Text("Completed periods keep their targets. Corrections to their entries still change progress.")
                 .font(.footnote).foregroundStyle(.secondary)
             Button("Save target") {
                 saving = true
                 Task {
-                    if await environment.apply(.editTarget(TargetEdit(activityID: activity.id, target: target))) {
+                    let edit = TargetEdit(activityID: activity.id, target: target,
+                                          addedSlotSeedMinutes: addedMinutes)
+                    if await environment.apply(.editTarget(edit)) {
                         dismiss()
                     }
                     saving = false
@@ -29,6 +37,22 @@ struct TargetEditorView: View {
             }.disabled(saving)
         }
         .navigationTitle("Target")
+        .onAppear { updateAddedTimes() }
+        .onChange(of: target) { _, _ in updateAddedTimes() }
+    }
+
+    private func updateAddedTimes() {
+        guard activity.cadence == .daily,
+              let config = environment.snapshot.reminders[activity.id], config.isEnabled else {
+            addedMinutes = []
+            return
+        }
+        let count = max(0, target - activity.effectiveTarget)
+        let existing = addedMinutes.isEmpty ? config.pendingSeeds : addedMinutes
+        let last = config.slots.last?.effectiveMinute ?? 480
+        addedMinutes = (0..<count).map { index in
+            index < existing.count ? existing[index] : min(1439, last + (index + 1) * 30)
+        }
     }
 
     private var preview: String {

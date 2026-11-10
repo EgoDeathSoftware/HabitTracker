@@ -14,12 +14,16 @@ final class PersistenceController: @unchecked Sendable {
         context.undoManager = nil
     }
 
-    static func open(storeURL: URL) async throws -> PersistenceController {
+    static func open(storeURL: URL, modelVersion: String? = nil) async throws -> PersistenceController {
         do {
             try FileManager.default.createDirectory(
                 at: storeURL.deletingLastPathComponent(), withIntermediateDirectories: true
             )
-            guard let modelURL = Bundle.main.url(forResource: "HabitTracker", withExtension: "momd"),
+            guard let directory = Bundle.main.url(forResource: "HabitTracker", withExtension: "momd")
+            else { throw HabitError.storeUnavailable }
+            let modelURL = modelVersion.map { directory.appendingPathComponent("\($0).mom") }
+                ?? directory
+            guard
                   let model = NSManagedObjectModel(contentsOf: modelURL) else {
                 throw HabitError.storeUnavailable
             }

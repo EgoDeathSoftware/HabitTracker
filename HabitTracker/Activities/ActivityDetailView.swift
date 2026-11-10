@@ -25,6 +25,16 @@ struct ActivityDetailView: View {
                 }
                 Section {
                     NavigationLink("Progress reports") { ReportsView(activity: activity) }
+                    NavigationLink("Reminders") {
+                        ReminderSettingsView(activity: activity,
+                                             configuration: environment.snapshot.reminders[activityID])
+                    }
+                    let unread = environment.snapshot.notices.filter {
+                        $0.activityID == activityID && $0.acknowledgedAt == nil
+                    }.count
+                    NavigationLink(unread > 0 ? "Reminder adjustments (\(unread) new)" : "Reminder adjustments") {
+                        ReminderNoticesView(activityID: activityID)
+                    }
                     NavigationLink("Edit recorded history") { HistoryEditorView(activityID: activityID) }
                     Button("Edit name and icon") { editing = true }
                     NavigationLink("Home Screen shortcut") { ShortcutGuideView(activity: activity) }
