@@ -57,8 +57,13 @@ struct CompletionSnapshot: Equatable, Sendable, Identifiable {
 struct GoalPeriodSnapshot: Equatable, Sendable {
     let activityID: UUID
     let cadence: Cadence
-    let range: DayRange
-    let target: Int
+    var range: DayRange
+    var target: Int
+    var eligibility: PeriodEligibility = .normal
+    var closedAt: Date?
+    var targetAppliedAt: Date = .distantPast
+
+    var endDayExclusive: CalendarDay { try! range.end.adding(days: 1) }
 
     init(activityID: UUID, cadence: Cadence, range: DayRange, target: Int) throws {
         try cadence.validate(target: target)
