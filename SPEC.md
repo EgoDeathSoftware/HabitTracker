@@ -18,6 +18,8 @@ Do not claim that a particular number of days guarantees habit formation.
 - Users create activities with names, icons, and frequency targets.
 - Log from the app or an activity-specific Home Screen shortcut. Each tap records one
   occurrence now. Brief in-app success confirmation is preferred; background logging is acceptable.
+- Provide in-app, step-by-step instructions for creating each activity's Home Screen shortcut.
+  The user completes setup in Apple's Shortcuts interface; automatic icon installation is not required.
 - Multiple daily completions are supported. Weekly targets count distinct days, freely chosen;
   users do not assign specific weekdays.
 - Weeks start on Monday by default, configurable in settings.
@@ -111,8 +113,41 @@ A supported background invocation may log without an in-app confirmation; errors
 masquerade as success.
 
 Users add icons through Apple's Shortcuts interface and choose the Home Screen name/icon.
-Provide instructions; do not promise programmatic icon placement. A stale shortcut for a
-deleted activity explains that the activity is unavailable and never recreates it.
+Do not promise programmatic icon placement. A stale shortcut for a deleted activity explains
+that the activity is unavailable and never recreates it.
+
+#### Required in-app setup guide
+
+Each saved activity offers a discoverable “Home Screen shortcut” help entry. The guide names
+that activity and is available again later, not only during onboarding. Its full instructions
+are bundled with the app and readable offline; an external help link alone is insufficient.
+Shortcut setup is optional and must not block ordinary in-app logging.
+
+The guide must walk a first-time user through:
+
+1. Opening Apple's Shortcuts app and creating a new shortcut.
+2. Finding this app's “Log Activity” action and adding it. The displayed action name must
+   match the shipped App Intent's name exactly.
+3. Selecting the saved activity as a fixed parameter, rather than asking which activity to
+   log every time. Explain how to distinguish activities with duplicate names.
+4. Naming the shortcut and using Apple's “Add to Home Screen” flow to choose a recognizable
+   Home Screen name/icon and finish adding it.
+5. Tapping the new icon to record one completion at the current date/time and checking the
+   updated activity history/progress. Explain that this is a real log; if used only as a
+   setup test, the user can remove it through the history editor.
+
+Explain that one tap means one occurrence: it meets a once-daily target, contributes one
+distinct day toward a weekly target, and contributes one completion toward a multiple-daily
+target. It must not imply that one tap always finishes the entire goal.
+
+Include concise troubleshooting for a missing action/activity, an unconfigured activity
+parameter, and a shortcut referencing a deleted activity. Tell users to save the activity
+first, reselect the intended activity if necessary, and remove/recreate an obsolete shortcut.
+Creating or reading the guide never records activity. Renaming an activity preserves the
+shortcut's binding, but its user-chosen Home Screen label may need manual editing.
+
+Verify the guide's actual navigation labels and steps on supported iOS 26 during implementation.
+Validate that someone can complete setup using only this guide and Apple's system interfaces.
 
 ### Deletion
 
@@ -353,6 +388,8 @@ No network connection is required to launch or use the app.
 | AC-18 | Schema migration, backup restoration, and direct phone transfer preserve data/settings/pending changes. Reconcile reminders after restore. |
 | AC-19 | Primary flows work with VoiceOver, large Dynamic Type, light/dark mode, and accessible icon labels. |
 | AC-20 | Travel/clock rollback into an already closed period preserves its target. A target edit affects the first unclosed period; existing history remains correctable. |
+| AC-21 | A first-time user follows the in-app guide to create a named activity-specific Home Screen icon. One tap logs once without asking which activity, with correct daily/weekly goal credit. |
+| AC-22 | The setup guide is accessible per activity, available offline and repeatable. Setup alone creates no logs; a real test log can be removed. In-app tracking works without shortcut setup. |
 
 Unit-test goal calculations, target/period rules, learning, and export; integration-test
 persistence and intents. Validate actual shortcut setup, background notification behavior,
