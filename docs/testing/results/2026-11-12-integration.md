@@ -16,8 +16,13 @@ on empty/populated activity lists and activity detail. The original audit failed
 labels. The activity list now provides vertical text expansion and an accessibility-size
 vertical layout for activity navigation/logging. The unchanged audit passes after those fixes.
 
-This automated accessibility subset does not establish contrast, hit-region, VoiceOver,
-light/dark appearance or accessibility of every screen. Physical D4 remains required.
+The audit was subsequently expanded to all supported audit types, including contrast and
+hit-region checks, on these same three primary screens. Its first run terminated with
+"Test crashed with signal term" in the result bundle, without an accessibility finding.
+An unchanged retry passed with exit zero in `.build-evidence/t11-accessibility-all-retry.log`.
+The original terminated run remains in `t11-accessibility-all.log`. This establishes the
+automated checks on those screens, while VoiceOver, light/dark review and accessibility of
+every screen still require physical D4 evidence.
 The full run also includes history, shortcut guide and export sharing UI tests.
 
 The independent review identified two Important defects that the first passing suite missed.
@@ -27,5 +32,8 @@ new Swift Testing report regression selected zero tests, so it was rerun at suit
 The owner connected `wall` on iOS 26.6.2. The signed device build succeeded and installed
 using existing project signing settings. Launch was denied with a code-signature/entitlement/
 profile-trust error. The owner was asked to check developer trust in iPhone Settings.
-No successful phone launch or device acceptance is claimed yet. Device D1–D6 checks remain open, including backup
+Subsequent devicectl process inspection found the installed HabitTracker executable running
+on the phone. The owner was asked to execute the first create/app-log/Home-Screen-log/
+correct/relaunch milestone. No tracking acceptance is claimed until those results arrive.
+Device D1–D6 checks remain open, including backup
 restoration and direct transfer with suitable equipment and explicit authorization.

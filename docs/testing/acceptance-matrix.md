@@ -66,7 +66,7 @@ remains open, so these automated results do not establish full acceptance of any
 | AC-16 | SchedulerTests, NotificationPlannerTests capacity/expiry/order checks | D3 OS capacity and delivery |
 | AC-17 | HabitStoreTests.saveFailureIsAtomic, IntentTests.noSuccessOnSaveFailure and committedChangesSurviveRefreshFailure, SchedulerTests.failureKeepsSavedLog | D1 physical storage failure UI |
 | AC-18 | MigrationTests.v1ToV2PreservesData, RestoreTests.failureDoesNotReset and reopenStoreReconciles | D6 Apple restore and transfer |
-| AC-19 | AccessibilityFlowTests.testPrimaryControls description/clipping/Dynamic Type audits | D4 VoiceOver, contrast, light/dark, all screens |
+| AC-19 | AccessibilityFlowTests.testPrimaryControls all supported audits on empty/populated lists and detail | D4 VoiceOver, phone contrast, light/dark, all screens |
 | AC-20 | PeriodRulesTests.closedPeriodRollback | D1 effective-date explanation |
 | AC-21 | IntentTests.fixedActivityParameterSurvivesRenameAndDeletion, ShortcutGuideTests | D2 iOS 26 shortcut setup |
 | AC-22 | ShortcutGuideTests.testRepeatableGuideExplainsOneOccurrenceWithoutLogging, OfflineFlowTests | D2 first-time setup and ordinary logging |
