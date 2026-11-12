@@ -68,7 +68,9 @@ enum ReportCalculator {
 
     static func report(snapshot: StoreSnapshot, request: ReportRequest,
                        at: ClockReading) throws -> HabitReport {
-        let timeline = snapshot.timeline
+        var timeline = snapshot.timeline
+        // Weekly goals can have activity-specific initial transition boundaries.
+        timeline.periods.removeAll { $0.activityID != request.activityID }
         let range = try bounds(request.span, day: request.anchor, timeline: timeline)
         let counts = snapshot.completions.reduce(into: [CalendarDay: Int]()) { counts, log in
             if log.activityID == request.activityID { counts[log.assignedDay, default: 0] += 1 }

@@ -5,6 +5,28 @@ import Testing
 
 @MainActor
 struct IntentTests {
+    @Test func committedChangesSurviveRefreshFailure() async throws {
+        let (store, _, id, now) = try await setup()
+        let activity = try #require(try await store.snapshot(at: now).timeline.activities.first)
+        let environment = AppEnvironment(store: store, snapshotReader: { _ in throw HabitError.storeUnavailable })
+        await environment.log(activity)
+        #expect(environment.confirmation != nil)
+        #expect(environment.needsRefresh)
+        #expect(environment.errorMessage == nil)
+        #expect(environment.failedLogs.isEmpty)
+        #expect(try await store.snapshot(at: now).completions.count == 1)
+        #expect(await environment.apply(.rename(id, name: "Read more", symbolName: "book")))
+        #expect(environment.errorMessage == nil)
+        #expect(try await store.snapshot(at: now).timeline.activities.first?.name == "Read more")
+        let entry = try #require(try await store.snapshot(at: now).completions.first)
+        await environment.retry(LogRequest(activityID: id, operationID: entry.operationID,
+            assignedDay: entry.assignedDay, occurredAt: entry.occurredAt,
+            captureTimeZoneID: entry.captureTimeZoneID, source: entry.source))
+        #expect(environment.confirmation != nil)
+        #expect(environment.errorMessage == nil)
+        #expect(try await store.snapshot(at: now).completions.count == 1)
+    }
+
     @Test func notificationTapOnlyNavigates() async throws {
         let (store, environment, id, now) = try await setup()
         await environment.openNotification(activityID: id)

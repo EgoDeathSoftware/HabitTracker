@@ -9,6 +9,7 @@ final class AppEnvironment {
     var isReady = false
     var isOpening = false
     var errorMessage: String?
+    var needsRefresh = false
     var confirmation: String?
     var failedLogs: [LogRequest] = []
     private(set) var store: HabitStore?
@@ -17,8 +18,11 @@ final class AppEnvironment {
     var notificationMessage: String?
     private var openingTask: Task<Void, Never>?
     @ObservationIgnored private var confirmationTask: Task<Void, Never>?
+    @ObservationIgnored private let snapshotReader: (@Sendable (HabitStore) async throws -> StoreSnapshot)?
 
-    init(store: HabitStore? = nil) {
+    init(store: HabitStore? = nil,
+         snapshotReader: (@Sendable (HabitStore) async throws -> StoreSnapshot)? = nil) {
+        self.snapshotReader = snapshotReader
         if let store {
             self.store = store
             configureActions(store)
@@ -70,9 +74,10 @@ final class AppEnvironment {
     func refresh() async {
         do {
             try await reload()
+            needsRefresh = false
             if let scheduler { _ = await scheduler.reconcile() }
         }
-        catch { errorMessage = error.localizedDescription }
+        catch { needsRefresh = true }
     }
 
     private func configureActions(_ store: HabitStore) {
@@ -105,7 +110,8 @@ final class AppEnvironment {
 
     private func reload() async throws {
         guard let store else { throw HabitError.storeUnavailable }
-        snapshot = try await store.snapshot(at: ClockReading(instant: Date(), timeZone: .current))
+        if let snapshotReader { snapshot = try await snapshotReader(store) }
+        else { snapshot = try await store.snapshot(at: ClockReading(instant: Date(), timeZone: .current)) }
     }
 
     @discardableResult
@@ -113,7 +119,7 @@ final class AppEnvironment {
         guard let actions else { errorMessage = HabitError.storeUnavailable.localizedDescription; return false }
         do {
             _ = try await actions.apply(command)
-            try await reload()
+            await refresh()
             return true
         } catch { errorMessage = error.localizedDescription; return false }
     }
@@ -122,7 +128,7 @@ final class AppEnvironment {
         guard let actions else { return }
         do {
             _ = try await actions.logNow(activityID: activity.id, source: .app)
-            try await reload()
+            await refresh()
             showConfirmation("Recorded one completion for \(activity.name).")
         } catch { errorMessage = error.localizedDescription }
         failedLogs = await actions.pendingRetries()
@@ -132,7 +138,7 @@ final class AppEnvironment {
         guard let actions else { return }
         do {
             _ = try await actions.retryLog(request)
-            try await reload()
+            await refresh()
             showConfirmation("Completion saved.")
         } catch { errorMessage = error.localizedDescription }
         failedLogs = await actions.pendingRetries()

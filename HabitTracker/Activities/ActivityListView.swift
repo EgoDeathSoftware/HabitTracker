@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ActivityListView: View {
     @Environment(AppEnvironment.self) private var environment
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showingEditor = false
 
     var body: some View {
@@ -45,6 +46,12 @@ struct ActivityListView: View {
 
     private var activityList: some View {
         List {
+            if environment.needsRefresh {
+                Section {
+                    Text("Your saved data could not be refreshed. Refresh history before checking the latest counts.")
+                    Button("Refresh history") { Task { await environment.refresh() } }
+                }
+            }
             if let confirmation = environment.confirmation {
                 Label(confirmation, systemImage: "checkmark.circle")
                     .font(.callout).accessibilityAddTraits(.updatesFrequently)
@@ -64,14 +71,28 @@ struct ActivityListView: View {
                 }
             }
             if environment.snapshot.timeline.activities.isEmpty {
-                ContentUnavailableView("Start with one activity", systemImage: "checkmark.circle",
-                                       description: Text("Add an activity and choose your daily or weekly target."))
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Start with one activity").font(.title2.bold())
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Add an activity and choose your daily or weekly target.")
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 12)
             }
             ForEach(environment.snapshot.timeline.activities) { activity in
-                HStack(alignment: .center, spacing: 16) {
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                    : AnyLayout(HStackLayout(alignment: .center, spacing: 16))
+                layout {
                     NavigationLink(value: activity.id) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Label(activity.name, systemImage: activity.symbolName).font(.headline)
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Image(systemName: activity.symbolName).accessibilityHidden(true)
+                                Text(activity.name)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .layoutPriority(1)
+                            }
+                            .font(.headline)
                             ActivityProgressView(activity: activity)
                         }
                     }

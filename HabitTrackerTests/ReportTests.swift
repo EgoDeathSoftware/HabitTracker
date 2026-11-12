@@ -3,6 +3,33 @@ import Testing
 @testable import HabitTracker
 
 struct ReportTests {
+    @Test func unrelatedHabitsCannotChangeWeekRange() throws {
+        func clock(_ day: String) throws -> ClockReading {
+            try ClockReading(instant: CalendarDay(day).midnight(in: .gmt).addingTimeInterval(36000), timeZone: .gmt)
+        }
+        let monday = try clock("2026-11-09")
+        let friday = try clock("2026-11-13")
+        let tuesday = try clock("2026-11-17")
+        let daily = UUID()
+        let early = UUID()
+        let late = UUID()
+        var state = StoreState()
+        _ = try CommandRules.apply(.create(daily, HabitDraft(name: "Daily", symbolName: "book", cadence: .daily, target: 1)), to: &state, at: monday)
+        _ = try CommandRules.apply(.create(early, HabitDraft(name: "Early", symbolName: "book", cadence: .weekly, target: 1)), to: &state, at: monday)
+        _ = try CommandRules.apply(.changeWeekStart(4), to: &state, at: friday)
+        _ = try CommandRules.apply(.create(late, HabitDraft(name: "Late", symbolName: "book", cadence: .weekly, target: 1)), to: &state, at: tuesday)
+        _ = try CommandRules.apply(.refresh, to: &state, at: tuesday)
+        let request = ReportRequest(activityID: daily, span: .week, anchor: tuesday.localDay)
+        let before = try ReportCalculator.report(snapshot: state.snapshot, request: request, at: tuesday)
+        state.snapshot.timeline.periods.reverse()
+        let reordered = try ReportCalculator.report(snapshot: state.snapshot, request: request, at: tuesday)
+        #expect(before.range == reordered.range)
+        state.snapshot.timeline.periods.removeAll { $0.activityID != daily }
+        let removed = try ReportCalculator.report(snapshot: state.snapshot, request: request, at: tuesday)
+        #expect(before.range == removed.range)
+        #expect(before.range == (try DayRange(start: CalendarDay("2026-11-16"), end: CalendarDay("2026-11-18"))))
+    }
+
     @Test func eligiblePeriodsAndWeightedRate() throws {
         let id = UUID()
         let days = try ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"]

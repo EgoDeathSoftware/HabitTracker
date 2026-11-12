@@ -1,7 +1,9 @@
 # Acceptance tests and evidence
 
-Date: 2026-11-10.
-Status: Planned; **none of the tests below have been implemented or run**.
+Updated November 12, 2026. Implementation and automated verification are in progress.
+The original test-design table below records planned coverage. Actual test names and
+results are recorded in the dated evidence files under `results/`. Physical procedures
+D1–D6 remain unverified, so version-one acceptance remains open.
 Sources: [SPEC.md](../../SPEC.md), [architecture](../architecture/0001-local-storage-and-domain.md),
 and [implementation tasks](../superpowers/plans/2026-11-10-habit-tracker.md).
 
@@ -35,6 +37,53 @@ Gregorian calendar. Tests must not sleep until real midnight or rely on internet
 | AC-20 | `PeriodRulesTests/closedPeriodRollback`: close Nov 9, return to Nov 9, target edit applies first unclosed period; correction still changes Nov 9 counts. No duplicate periods. | D1: effective-date explanation shown for rollback case using test clock in test build. | T02, T04 |
 | AC-21 | `IntentTests/fixedActivityParameter`; `ShortcutGuideTests/oneOccurrenceCopy` (UI). | D2: first-time user follows bundled guide on supported iOS 26; fixed activity, chosen icon/name, no activity prompt on tap; correct 1/day, 2/day, 2/week behavior. | T05 |
 | AC-22 | `ShortcutGuideTests/repeatableOfflineAndNoSideEffects` (UI): access per saved habit; reopen offline; no log on guide/setup; history can delete real test log. | D2: ordinary in-app logging works without creating any shortcut. | T04, T05, T11 |
+
+## Implemented evidence
+
+The following inventory maps the acceptance criteria to implemented checks. The full
+pre-review run passed 54 domain and six UI tests. The post-review run passed 56 domain and
+six UI tests. Final post-review integration is recorded in the
+[integration results](results/2026-11-12-integration.md). Every required physical check
+remains open, so these automated results do not establish full acceptance of any device gate.
+
+| Criterion | Implemented automated evidence | Remaining verification |
+| --- | --- | --- |
+| AC-01 | OfflineFlowTests.testFullJourney, plus domain/export suites | D1 airplane mode on phone |
+| AC-02 | GoalRulesTests.dailyCredit, HistoryFlowTests | D1 display comparison |
+| AC-03 | GoalRulesTests.weeklyDistinctDays | D2 shortcut taps |
+| AC-04 | PeriodRulesTests.weeklyMidpoint | Phone effective-date preview |
+| AC-05 | PeriodRulesTests.pendingReplacementAndActivation, MigrationTests | D1 pending state after relaunch |
+| AC-06 | HistoryTests.correctionsRecalculateTravelKeepsAssignedDayAndCascadeDelete, NotificationPlannerTests | D1 backfill and correction flow |
+| AC-07 | HabitStoreTests.retryAndConcurrency, IntentTests.confirmationAfterSave | D2 rapid real shortcut taps |
+| AC-08 | IntentTests.fixedActivityParameterSurvivesRenameAndDeletion | D2 saved shortcut identity |
+| AC-09 | HistoryFlowTests.testCreateLogRestartAndDelete, HistoryTests, SchedulerTests.latestRevisionWins | D1/D3 OS cancellation |
+| AC-10 | NotificationPlannerTests.capacitySuppressionAndCorrection, weeklySuppressionAndFutureOnly | D3 delivery suppression |
+| AC-11 | ReminderLearningTests, MigrationTests notice persistence | D3 notice usability and real learning |
+| AC-12 | ReportTests.eligiblePeriodsAndWeightedRate, completedPeriodComparisons | D4 report labels |
+| AC-13 | ReportTests.crossMonthAndYear, CSVExportTests.assignedDatesAndHistoricalTargets | D4/D5 actual exported view |
+| AC-14 | PeriodRulesTests.calendarEdges, HistoryTests, NotificationPlannerTests.dstOnce | D3 phone timezone changes |
+| AC-15 | CSVExportTests, ExportFlowTests.testExportAndCancelSharing | D5 spreadsheet interpretation |
+| AC-16 | SchedulerTests, NotificationPlannerTests capacity/expiry/order checks | D3 OS capacity and delivery |
+| AC-17 | HabitStoreTests.saveFailureIsAtomic, IntentTests.noSuccessOnSaveFailure and committedChangesSurviveRefreshFailure, SchedulerTests.failureKeepsSavedLog | D1 physical storage failure UI |
+| AC-18 | MigrationTests.v1ToV2PreservesData, RestoreTests.failureDoesNotReset and reopenStoreReconciles | D6 Apple restore and transfer |
+| AC-19 | AccessibilityFlowTests.testPrimaryControls description/clipping/Dynamic Type audits | D4 VoiceOver, contrast, light/dark, all screens |
+| AC-20 | PeriodRulesTests.closedPeriodRollback | D1 effective-date explanation |
+| AC-21 | IntentTests.fixedActivityParameterSurvivesRenameAndDeletion, ShortcutGuideTests | D2 iOS 26 shortcut setup |
+| AC-22 | ShortcutGuideTests.testRepeatableGuideExplainsOneOccurrenceWithoutLogging, OfflineFlowTests | D2 first-time setup and ordinary logging |
+
+- Tracking, period rules, SQLite and shortcuts have focused results in
+  [domain foundation](results/2026-11-10-domain-foundation.md),
+  [local store](results/2026-11-10-local-store.md),
+  [calendar/history](results/2026-11-10-calendar-history.md), and
+  [in-app tracking](results/2026-11-10-in-app-tracking.md).
+- Reporting and reminder learning have results in
+  [reports](results/2026-11-10-reports.md) and
+  [reminder learning](results/2026-11-10-reminder-learning.md).
+- Notification queue policy and reconciliation have results in
+  [notification planning](results/2026-11-12-notification-planner.md).
+- CSV export and local continuity have results in
+  [CSV export](results/2026-11-12-csv-export.md) and
+  [data continuity](results/2026-11-12-data-continuity.md).
 
 ## Device procedures
 
@@ -121,4 +170,4 @@ claim AC-18 fully passed or erase/reset the user's phone to complete a checklist
 Each task records its focused automated results and any device evidence it owns. Before calling
 version 1 accepted, all AC rows need their required evidence. Personal milestone use may begin
 earlier with explicitly listed outstanding checks. App Store submission is a separate task and
-does not follow automatically from this plan. No results exist yet.
+does not follow automatically from this plan. Automated results are linked above.
