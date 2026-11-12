@@ -22,6 +22,7 @@ struct SettingsView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section("Your data") {
+                NavigationLink("Export history") { ExportView() }
                 Text("History stays on this device. No account or connection is needed.")
                 Text("Device backups are controlled by your Apple settings. CSV export is a report, not a backup.")
                     .font(.footnote)

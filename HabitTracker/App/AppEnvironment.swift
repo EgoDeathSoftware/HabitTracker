@@ -39,6 +39,7 @@ final class AppEnvironment {
         isOpening = true
         defer { isOpening = false }
         do {
+            try? CSVExporter.removeInterruptedExports()
             let root = try FileManager.default.url(
                 for: .applicationSupportDirectory, in: .userDomainMask,
                 appropriateFor: nil, create: true
