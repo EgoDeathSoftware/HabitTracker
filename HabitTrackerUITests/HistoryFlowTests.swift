@@ -20,6 +20,8 @@ final class HistoryFlowTests: XCTestCase {
         reminders.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         XCTAssertEqual(reminders.value as? String, "1")
         app.buttons["Save reminder settings"].tap()
+        let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.buttons["Allow"]
+        if allow.waitForExistence(timeout: 3) { allow.tap() }
         XCTAssertTrue(app.buttons["Progress reports"].waitForExistence(timeout: 5))
         app.buttons["Progress reports"].tap()
         XCTAssertTrue(app.staticTexts["Calendar"].waitForExistence(timeout: 5))

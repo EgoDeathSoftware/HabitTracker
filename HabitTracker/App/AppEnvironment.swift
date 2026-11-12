@@ -13,13 +13,15 @@ final class AppEnvironment {
     var failedLogs: [LogRequest] = []
     private(set) var store: HabitStore?
     private(set) var actions: ActivityActions?
+    private(set) var scheduler: NotificationScheduler?
+    var notificationMessage: String?
     private var openingTask: Task<Void, Never>?
     @ObservationIgnored private var confirmationTask: Task<Void, Never>?
 
     init(store: HabitStore? = nil) {
         if let store {
             self.store = store
-            actions = ActivityActions(store: store)
+            configureActions(store)
             isReady = true
         }
     }
@@ -56,16 +58,48 @@ final class AppEnvironment {
             )
             let store = HabitStore(controller: controller)
             self.store = store
-            actions = ActivityActions(store: store)
+            configureActions(store)
             try await reload()
             isReady = true
             errorMessage = nil
+            if let scheduler { _ = await scheduler.reconcile() }
         } catch { errorMessage = error.localizedDescription }
     }
 
     func refresh() async {
-        do { try await reload() }
+        do {
+            try await reload()
+            if let scheduler { _ = await scheduler.reconcile() }
+        }
         catch { errorMessage = error.localizedDescription }
+    }
+
+    private func configureActions(_ store: HabitStore) {
+        let scheduler = NotificationScheduler(client: SystemNotificationClient(), snapshot: {
+            try await store.snapshot(at: ClockReading(instant: Date(), timeZone: .current))
+        })
+        self.scheduler = scheduler
+        actions = ActivityActions(store: store, scheduler: scheduler)
+    }
+
+    func enableNotificationPermission(client: any NotificationClient = SystemNotificationClient()) async {
+        do {
+            if await client.authorization() == .notDetermined {
+                _ = try await client.requestAuthorization()
+            }
+            let status = await client.authorization()
+            notificationMessage = status == .denied
+                ? "Allow notifications for HabitTracker in iPhone Settings to receive reminders."
+                : nil
+        } catch {
+            notificationMessage = "Notification permission could not be requested. Try again. Your tracking data is saved."
+        }
+    }
+
+    func openNotification(activityID: UUID) async {
+        await open()
+        guard snapshot.timeline.activities.contains(where: { $0.id == activityID }) else { return }
+        router.showActivity(id: activityID, confirmation: nil)
     }
 
     private func reload() async throws {

@@ -26,11 +26,13 @@ struct ReminderSettingsView: View {
                     Text("Keep times at least 30 minutes apart, including overnight. Times adapt gradually after five qualifying days.")
                 }
             }
-            Text("Notification delivery will be available when scheduling is connected.")
+            Text("Reminders cover the next 28 days, up to 60 upcoming notifications across your habits. Open the app regularly to refresh coverage. iOS controls delivery timing.")
                 .font(.footnote).foregroundStyle(.secondary)
+            if let message = environment.notificationMessage { Text(message) }
             Button("Save reminder settings") {
                 saving = true
                 Task {
+                    if enabled { await environment.enableNotificationPermission() }
                     let edit = ReminderEdit(activityID: activity.id, isEnabled: enabled, minutes: minutes)
                     if await environment.apply(.editReminders(edit)) { dismiss() }
                     saving = false

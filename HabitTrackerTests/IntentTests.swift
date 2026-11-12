@@ -5,6 +5,16 @@ import Testing
 
 @MainActor
 struct IntentTests {
+    @Test func notificationTapOnlyNavigates() async throws {
+        let (store, environment, id, now) = try await setup()
+        await environment.openNotification(activityID: id)
+        #expect(environment.router.path == [id])
+        #expect(environment.router.confirmation == nil)
+        #expect(try await store.snapshot(at: now).completions.isEmpty)
+        await environment.openNotification(activityID: UUID())
+        #expect(environment.router.path == [id])
+    }
+
     private func setup() async throws -> (HabitStore, AppEnvironment, UUID, ClockReading) {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             .appendingPathComponent("history.sqlite")

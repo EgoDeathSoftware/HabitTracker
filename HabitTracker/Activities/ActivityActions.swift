@@ -2,12 +2,18 @@ import Foundation
 
 actor ActivityActions {
     private let store: HabitStore
+    private let scheduler: NotificationScheduler?
     private var failedLogs: [UUID: LogRequest] = [:]
 
-    init(store: HabitStore) { self.store = store }
+    init(store: HabitStore, scheduler: NotificationScheduler? = nil) {
+        self.store = store
+        self.scheduler = scheduler
+    }
 
     func apply(_ command: HabitCommand, at: ClockReading? = nil) async throws -> MutationReceipt {
-        try await store.execute(command, at: at ?? ClockReading(instant: Date(), timeZone: .current))
+        let receipt = try await store.execute(command, at: at ?? ClockReading(instant: Date(), timeZone: .current))
+        if let scheduler { _ = await scheduler.reconcile() }
+        return receipt
     }
 
     func logNow(activityID: UUID, source: CompletionSource) async throws -> MutationReceipt {
