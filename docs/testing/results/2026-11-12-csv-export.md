@@ -18,6 +18,12 @@ Explicit CRLF examples exposed a Swift grapheme-cluster bug in the first escapin
 The exporter now checks Unicode scalar character membership and quotes CRLF correctly.
 The first UI run needed a wait for the share dismissal/navigation animation to finish.
 
-Remaining checks include weekly uncapped observations and status precedence fixtures,
-complete large-export responsiveness, and D5 interoperability with spreadsheet applications
-on the owner's physical phone. No physical-device interoperability is claimed.
+Seven export tests passed in `.build-evidence/t09-final.log`, adding uncapped weekly
+active-day observations and initial-partial/transitional status precedence. The full ten-year,
+25-habit fixture produced 91,325 data rows. Initial export time was 22.83 seconds. Advancing
+through sorted periods instead of searching them for every row reduced export time to
+2.07 seconds in `.build-evidence/t10-continuity.log`. Timing excludes fixture construction.
+The exporter runs on the concurrent executor and checks cancellation on every row.
+
+D5 interoperability with spreadsheet applications on the owner's physical phone remains
+unverified. No physical-device interoperability is claimed.

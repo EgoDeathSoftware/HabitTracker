@@ -3,6 +3,53 @@ import Testing
 @testable import HabitTracker
 
 struct CSVExportTests {
+    @Test func weeklyObservationsAndStatusPrecedence() async throws {
+        let now = try ClockReading(instant: ISO8601DateFormatter().date(from: "2026-11-11T12:00:00Z")!, timeZone: .gmt)
+        let id = UUID()
+        let first = try CalendarDay("2026-11-09")
+        let activity = ActivitySnapshot(id: id, draft: try HabitDraft(name: "Walk", symbolName: "figure.walk", cadence: .weekly, target: 1), createdAt: first.midnight(in: .gmt), createdDay: first)
+        var period = try GoalPeriodSnapshot(activityID: id, cadence: .weekly,
+            range: DayRange(start: first, end: CalendarDay("2026-11-15")), target: 1)
+        let logs = try FixtureFactory.logs(["2026-11-09", "2026-11-09", "2026-11-10"], activityID: id)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        for (eligibility, expected) in [(PeriodEligibility.normal, "in_progress"), (.initialPartial, "initial_partial"), (.transitional, "transitional")] {
+            period.eligibility = eligibility
+            let snapshot = StoreSnapshot(timeline: TimelineState(activities: [activity], periods: [period]), completions: logs)
+            let url = try await CSVExporter.export(snapshot: snapshot,
+                range: DayRange(start: first, end: now.localDay), at: now, directory: directory)
+            let rows = try String(contentsOf: url, encoding: .utf8).components(separatedBy: "\r\n").filter { !$0.isEmpty }.dropFirst()
+            let cells = rows.map { $0.components(separatedBy: ",") }
+            #expect(cells.map { $0[7] } == ["2", "1", "0"])
+            #expect(cells.map { $0[9] } == ["1", "1", "0"])
+            #expect(cells.allSatisfy { $0[8].isEmpty && $0[10] == expected })
+        }
+    }
+
+    @Test func tenYearsOfTwentyFiveHabits() async throws {
+        let now = try ClockReading(instant: Date(), timeZone: .gmt)
+        let first = try now.localDay.adding(days: -3652)
+        let created = try ClockReading(instant: first.midnight(in: .gmt), timeZone: .gmt)
+        var timeline = TimelineState()
+        for _ in 0..<25 {
+            let id = UUID()
+            timeline.activities.append(ActivitySnapshot(id: id, draft: try HabitDraft(name: "Read", symbolName: "book", cadence: .daily, target: 1), at: created))
+            for offset in 0...3652 {
+                let day = try first.adding(days: offset)
+                timeline.periods.append(try GoalPeriodSnapshot(activityID: id, cadence: .daily,
+                    range: DayRange(start: day, end: day), target: 1))
+            }
+        }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let started = ContinuousClock.now
+        let url = try await CSVExporter.export(snapshot: StoreSnapshot(timeline: timeline),
+            range: DayRange(start: first, end: now.localDay), at: now, directory: directory)
+        print("Ten-year, 25-habit export duration \(started.duration(to: .now))")
+        let rows = try String(contentsOf: url, encoding: .utf8).components(separatedBy: "\r\n").filter { !$0.isEmpty }
+        #expect(rows.count == 1 + 25 * 3653)
+    }
+
     @Test func cancellationDuringLargeExport() async throws {
         let now = try ClockReading(instant: Date(), timeZone: .gmt)
         let first = try now.localDay.adding(days: -10000)

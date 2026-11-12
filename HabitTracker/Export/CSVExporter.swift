@@ -32,11 +32,17 @@ enum CSVExporter {
             for activity in snapshot.timeline.activities.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
                 var day = max(range.start, activity.trackingStartDay)
                 let periods = snapshot.timeline.periods.filter { $0.activityID == activity.id }
+                    .sorted { $0.range.start < $1.range.start }
+                var periodIndex = 0
                 let counts = snapshot.completions.filter { $0.activityID == activity.id }
                     .reduce(into: [CalendarDay: Int]()) { $0[$1.assignedDay, default: 0] += 1 }
                 while day <= range.end {
                     try Task.checkCancellation()
-                    if let period = periods.first(where: { $0.range.contains(day) }) {
+                    while periodIndex < periods.count && periods[periodIndex].range.end < day {
+                        periodIndex += 1
+                    }
+                    if periodIndex < periods.count, periods[periodIndex].range.contains(day) {
+                        let period = periods[periodIndex]
                         let raw = counts[day, default: 0]
                         let daily = activity.cadence == .daily ? String(min(raw, period.target)) : ""
                         let weekly = activity.cadence == .weekly ? String(raw > 0 ? 1 : 0) : ""
