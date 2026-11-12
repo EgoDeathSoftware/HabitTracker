@@ -35,5 +35,11 @@ profile-trust error. The owner was asked to check developer trust in iPhone Sett
 Subsequent devicectl process inspection found the installed HabitTracker executable running
 on the phone. The owner was asked to execute the first create/app-log/Home-Screen-log/
 correct/relaunch milestone. No tracking acceptance is claimed until those results arrive.
+Read-only inspection of a copied app database subsequently found four activities and three
+completions with source `shortcut`, with zero corrected entries and no app-origin completions.
+SQLite integrity_check returned `ok`. This provides device persistence evidence for the
+shortcut action, while it cannot identify whether the action was invoked from a Home Screen
+icon, prove correction/relaunch behavior, or substitute for the remaining milestone steps.
+The copy is local ignored build evidence and is not an Apple backup restoration test.
 Device D1–D6 checks remain open, including backup
 restoration and direct transfer with suitable equipment and explicit authorization.
